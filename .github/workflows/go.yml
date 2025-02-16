@@ -11,10 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: ["1.20", "1.21", "1.22", "1.23"]
+        go-version: ['1.20', '1.21', '1.22', '1.23']
+      fail-fast: false
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -25,7 +28,9 @@ jobs:
         run: mkdir -p bin
 
       - name: Build
-        run: make build
+        run: |
+          make clean
+          make build
 
       - name: Test
         run: make test
@@ -42,17 +47,21 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21" # Using stable version for releases
+          go-version: '1.21'
 
       - name: Create bin directory
         run: mkdir -p bin
 
       - name: Build all platforms
-        run: make build-all
+        run: |
+          make clean
+          make build-all
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -62,3 +71,5 @@ jobs:
             bin/go-git-swap-darwin-arm64
             bin/go-git-swap-linux-amd64
             bin/go-git-swap-linux-arm64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

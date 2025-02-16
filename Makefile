@@ -7,14 +7,14 @@ LDFLAGS=-ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME}"
 
 # Build for the current platform
 build:
-    go build ${LDFLAGS} -o bin/${BINARY_NAME} ./cmd/go-git-swap
+    go build $(LDFLAGS) -o bin/$(BINARY_NAME) ./cmd/go-git-swap
 
 # Build for all supported platforms
 build-all:
-    GOOS=darwin GOARCH=amd64 go build ${LDFLAGS} -o bin/${BINARY_NAME}-darwin-amd64 ./cmd/go-git-swap
-    GOOS=darwin GOARCH=arm64 go build ${LDFLAGS} -o bin/${BINARY_NAME}-darwin-arm64 ./cmd/go-git-swap
-    GOOS=linux GOARCH=amd64 go build ${LDFLAGS} -o bin/${BINARY_NAME}-linux-amd64 ./cmd/go-git-swap
-    GOOS=linux GOARCH=arm64 go build ${LDFLAGS} -o bin/${BINARY_NAME}-linux-arm64 ./cmd/go-git-swap
+    GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-amd64 ./cmd/go-git-swap
+    GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-arm64 ./cmd/go-git-swap
+    GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-amd64 ./cmd/go-git-swap
+    GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-arm64 ./cmd/go-git-swap
 
 # Run tests
 test:
@@ -26,7 +26,7 @@ clean:
 
 # Install locally
 install: build
-    mv bin/${BINARY_NAME} ${GOPATH}/bin/${BINARY_NAME}
+    mv bin/$(BINARY_NAME) $(GOPATH)/bin/$(BINARY_NAME)
 
 # Run linter
 lint:
@@ -46,7 +46,7 @@ coverage:
 ```text
 MIT License
 
-Copyright (c) 2024 [Your Name]
+Copyright (c) 2025 [Francisco Rivas]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
