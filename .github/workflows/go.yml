@@ -21,6 +21,9 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
+      - name: Create bin directory
+        run: mkdir -p bin
+
       - name: Build
         run: make build
 
@@ -43,7 +46,10 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: "1.21" # Using stable version for releases
+
+      - name: Create bin directory
+        run: mkdir -p bin
 
       - name: Build all platforms
         run: make build-all

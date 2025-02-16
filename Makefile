@@ -3,41 +3,36 @@ VERSION=$(shell git describe --tags --always --dirty)
 BUILD_TIME=$(shell date +%FT%T%z)
 LDFLAGS=-ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME}"
 
+.PHONY: build build-all test clean install lint coverage
+
 # Build for the current platform
-.PHONY: build
 build:
-    go build ${LDFLAGS} -o bin/${BINARY_NAME} cmd/go-git-swap/main.go
+    go build ${LDFLAGS} -o bin/${BINARY_NAME} ./cmd/go-git-swap
 
 # Build for all supported platforms
-.PHONY: build-all
 build-all:
-    GOOS=darwin GOARCH=amd64 go build ${LDFLAGS} -o bin/${BINARY_NAME}-darwin-amd64 cmd/go-git-swap/main.go
-    GOOS=darwin GOARCH=arm64 go build ${LDFLAGS} -o bin/${BINARY_NAME}-darwin-arm64 cmd/go-git-swap/main.go
-    GOOS=linux GOARCH=amd64 go build ${LDFLAGS} -o bin/${BINARY_NAME}-linux-amd64 cmd/go-git-swap/main.go
-    GOOS=linux GOARCH=arm64 go build ${LDFLAGS} -o bin/${BINARY_NAME}-linux-arm64 cmd/go-git-swap/main.go
+    GOOS=darwin GOARCH=amd64 go build ${LDFLAGS} -o bin/${BINARY_NAME}-darwin-amd64 ./cmd/go-git-swap
+    GOOS=darwin GOARCH=arm64 go build ${LDFLAGS} -o bin/${BINARY_NAME}-darwin-arm64 ./cmd/go-git-swap
+    GOOS=linux GOARCH=amd64 go build ${LDFLAGS} -o bin/${BINARY_NAME}-linux-amd64 ./cmd/go-git-swap
+    GOOS=linux GOARCH=arm64 go build ${LDFLAGS} -o bin/${BINARY_NAME}-linux-arm64 ./cmd/go-git-swap
 
 # Run tests
-.PHONY: test
 test:
     go test -v ./...
 
 # Clean build artifacts
-.PHONY: clean
 clean:
     rm -rf bin/
 
 # Install locally
-.PHONY: install
 install: build
     mv bin/${BINARY_NAME} ${GOPATH}/bin/${BINARY_NAME}
 
 # Run linter
-.PHONY: lint
 lint:
     golangci-lint run
 
 # Generate test coverage
-.PHONY: coverage
 coverage:
     go test -coverprofile=coverage.out ./...
     go tool cover -html=coverage.out
