@@ -1,5 +1,4 @@
-
-# Go Git Swap 🔄
+# Go Git Swap
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/frivas/go-git-swap)](https://goreportcard.com/report/github.com/frivas/go-git-swap)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -10,22 +9,17 @@ Go Git Swap is a command-line tool that helps developers manage multiple Git con
 
 ## 🗺️ Roadmap
 
-### Coming Soon (Q2 2024)
-- [ ] Modern TUI interface using [Bubble Tea](https://github.com/charmbracelet/bubbletea)
+### Coming Soon (Q2/3 2025)
+
+- [ ] Modern TUI interface using [Bubble Tea](https://github.com/charmbracelet/bubbletea) or similar
 - [ ] Enhanced SSH signing key support
 - [ ] Profile templates and quick switching
-- [ ] Auto-detection of Git repositories
-
-### Future Plans (Q3-Q4 2024)
-- [ ] Profile groups for different contexts (work, personal, client)
-- [ ] Git hooks management
-- [ ] Profile sharing and import/export
-- [ ] Integration with popular Git hosting platforms
-- [ ] Configuration backup and sync
+- [ ] Configuration backup
 
 ## Features ✨
 
 Current features:
+
 - Manage multiple Git profiles
 - Easy switching between profiles
 - Basic SSH signing key support
@@ -63,16 +57,19 @@ make build-all
 ## Usage 💡
 
 1. Start the application:
+
 ```bash
 go-git-swap
 ```
 
 2. Create a new profile:
+
    - Select option 2
    - Enter profile details (name, email, username, etc.)
    - Optionally add an SSH signing key
 
 3. Switch between profiles:
+
    - Select option 1
    - Choose the profile you want to activate
 
@@ -141,6 +138,7 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 ### Code Style
 
 Please follow these guidelines:
+
 - Use `gofmt` to format your code
 - Add comments for exported functions
 - Write tests for new functionality
@@ -160,6 +158,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 If you find this project useful, please consider giving it a ⭐️ on GitHub!
 
 For bugs, feature requests, or questions, please [open an issue](https://github.com/frivas/go-git-swap/issues).
+
 # Go Git Swap 🔄
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/frivas/go-git-swap)](https://goreportcard.com/report/github.com/frivas/go-git-swap)
@@ -206,16 +205,19 @@ make build-all
 ## Usage 💡
 
 1. Start the application:
+
 ```bash
 go-git-swap
 ```
 
 2. Create a new profile:
+
    - Select option 2
    - Enter profile details (name, email, username, etc.)
    - Optionally add an SSH signing key
 
 3. Switch between profiles:
+
    - Select option 1
    - Choose the profile you want to activate
 
@@ -284,6 +286,7 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 ### Code Style
 
 Please follow these guidelines:
+
 - Use `gofmt` to format your code
 - Add comments for exported functions
 - Write tests for new functionality
