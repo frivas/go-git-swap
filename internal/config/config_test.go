@@ -3,7 +3,9 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/frivas/go-git-swap/internal/model"
@@ -47,6 +49,9 @@ func TestProfileLifecycle(t *testing.T) {
 }
 
 func TestFileIsPrivate(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix permissions do not apply")
+	}
 	path := filepath.Join(t.TempDir(), FileName)
 	if err := os.WriteFile(path, []byte(`{"profiles":{}}`), 0o644); err != nil {
 		t.Fatal(err)
@@ -64,5 +69,30 @@ func TestFileIsPrivate(t *testing.T) {
 	}
 	if perm := info.Mode().Perm(); perm != 0o600 {
 		t.Fatalf("mode = %o, want 600", perm)
+	}
+}
+
+func TestSaveKeepsSymlink(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "dotfiles.json")
+	link := filepath.Join(dir, FileName)
+	if err := os.WriteFile(target, []byte(`{"profiles":{}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, link); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	cfg, err := Open(link)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := cfg.AddProfile(model.GitProfile{Name: "a"}); err != nil {
+		t.Fatal(err)
+	}
+	if fi, err := os.Lstat(link); err != nil || fi.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("symlink replaced by a regular file: %v", err)
+	}
+	if data, _ := os.ReadFile(target); !strings.Contains(string(data), `"a"`) {
+		t.Fatalf("target not updated: %s", data)
 	}
 }

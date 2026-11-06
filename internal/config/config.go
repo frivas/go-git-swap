@@ -71,7 +71,12 @@ func (c *Config) save() error {
 	if err != nil {
 		return err
 	}
-	tmp, err := os.CreateTemp(filepath.Dir(c.filepath), ".go-git-swap-*.json")
+	// Write through a symlink (e.g. a dotfiles manager) instead of replacing it.
+	path := c.filepath
+	if target, err := filepath.EvalSymlinks(path); err == nil {
+		path = target
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".go-git-swap-*.json")
 	if err != nil {
 		return err
 	}
@@ -84,7 +89,7 @@ func (c *Config) save() error {
 		return err
 	}
 	// CreateTemp already uses 0600.
-	return os.Rename(tmp.Name(), c.filepath)
+	return os.Rename(tmp.Name(), path)
 }
 
 func (c *Config) AddProfile(profile model.GitProfile) error {

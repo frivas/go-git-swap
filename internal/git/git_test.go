@@ -15,6 +15,7 @@ func sandbox(t *testing.T) string {
 	t.Helper()
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home) // os.UserHomeDir on Windows
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
 	t.Setenv("GIT_CONFIG_GLOBAL", filepath.Join(home, ".gitconfig"))
@@ -77,6 +78,21 @@ func TestSwitchingDropsPreviousSigningKey(t *testing.T) {
 	}
 }
 
+func TestExpandPath(t *testing.T) {
+	home := sandbox(t)
+	t.Setenv("KEYDIR", "/keys")
+	for in, want := range map[string]string{
+		"~/.ssh/a.pub":                       filepath.Join(home, ".ssh", "a.pub"),
+		"$KEYDIR/a.pub":                      "/keys/a.pub",
+		"/abs/~/a.pub":                       "/abs/~/a.pub",
+		"~" + string(os.PathSeparator) + "b": filepath.Join(home, "b"),
+	} {
+		if got, err := ExpandPath(in); err != nil || got != want {
+			t.Errorf("ExpandPath(%q) = %q, %v; want %q", in, got, err, want)
+		}
+	}
+}
+
 func TestReadPublicKeyRejectsPrivateKey(t *testing.T) {
 	p := filepath.Join(t.TempDir(), "id")
 	if err := os.WriteFile(p, []byte("-----BEGIN OPENSSH PRIVATE KEY-----\nabc\n"), 0o600); err != nil {
@@ -84,5 +100,49 @@ func TestReadPublicKeyRejectsPrivateKey(t *testing.T) {
 	}
 	if _, err := ReadPublicKey(p); err == nil {
 		t.Fatal("private key accepted as public key")
+	}
+}
+
+// TestNoIdentityLeaks switches between every ordered pair of profiles and
+// checks that nothing identifying from the previous profile survives.
+func TestNoIdentityLeaks(t *testing.T) {
+	home := sandbox(t)
+	sshDir := filepath.Join(home, ".ssh")
+	if err := os.MkdirAll(sshDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	for _, k := range []string{"a", "b"} {
+		if out, err := exec.Command("ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", filepath.Join(sshDir, k)).CombinedOutput(); err != nil {
+			t.Skipf("ssh-keygen unavailable: %v %s", err, out)
+		}
+	}
+	profiles := []model.GitProfile{
+		{Name: "key-a", FullName: "A", Username: "ua", Email: "a@a.io", SigningKey: filepath.Join(sshDir, "a.pub")},
+		{Name: "key-b", FullName: "B", Username: "ub", Email: "b@b.io", SigningKey: filepath.Join(sshDir, "b.pub")},
+		{Name: "nokey", FullName: "C", Username: "uc", Email: "c@c.io"},
+		{Name: "nouser", FullName: "D", Email: "d@d.io"},
+	}
+	g := New()
+	for _, from := range profiles {
+		for _, to := range profiles {
+			if err := g.SetGlobalConfig(from); err != nil {
+				t.Fatal(err)
+			}
+			if err := g.SetGlobalConfig(to); err != nil {
+				t.Fatal(err)
+			}
+			want := map[string]string{
+				"user.name": to.FullName, "user.email": to.Email, "user.username": to.Username,
+				"user.signingkey": to.SigningKey, "commit.gpgsign": "",
+			}
+			if to.SigningKey != "" {
+				want["commit.gpgsign"] = "true"
+			}
+			for key, w := range want {
+				if got := get(t, key); got != w {
+					t.Errorf("%s -> %s: %s = %q, want %q", from.Name, to.Name, key, got, w)
+				}
+			}
+		}
 	}
 }

@@ -18,10 +18,14 @@ func New() *GitConfig {
 	return &GitConfig{}
 }
 
-// ExpandPath expands $VARS and a leading ~/ in path.
+// ExpandPath expands $VARS and a leading ~/ (or ~\ on Windows) in path.
 func ExpandPath(path string) (string, error) {
 	path = os.ExpandEnv(path)
-	if rest, ok := strings.CutPrefix(path, "~/"); ok {
+	rest, ok := strings.CutPrefix(path, "~/")
+	if !ok {
+		rest, ok = strings.CutPrefix(path, "~"+string(os.PathSeparator))
+	}
+	if ok {
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return "", err
