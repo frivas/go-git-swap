@@ -9,7 +9,7 @@ Inspired by the need to manage multiple Git configurations easily. Go Git Swap i
 
 ## 🗺️ Roadmap
 
-### Coming Soon (Q2/3 2025)
+### Planned
 
 - [ ] Modern TUI interface using [Bubble Tea](https://github.com/charmbracelet/bubbletea) or similar
 - [ ] Enhanced SSH signing key support
@@ -22,23 +22,23 @@ Current features:
 
 - Manage multiple Git profiles
 - Easy switching between profiles
-- Basic SSH signing key support
+- SSH commit signing: sets `gpg.format=ssh`, `user.signingkey` and `commit.gpgsign`, and adds the key to your allowed signers file so `git log --show-signature` verifies. Profiles without a key turn signing off.
 - Automatic configuration of Git global settings
 - Simple CLI interface
-- Cross-platform support (macOS, Linux)
-- Secure local configuration storage
+- Cross-platform: Linux (amd64, arm64), macOS (Apple Silicon), Windows (amd64, arm64)
+- Profiles stored in `~/.go-git-swap.json` with `0600` permissions
 
 ## Installation 🚀
 
 ### Using Go
 
 ```bash
-go install github.com/frivas/go-git-swap@latest
+go install github.com/frivas/go-git-swap/cmd/go-git-swap@latest
 ```
 
 ### From Releases
 
-Download the latest release for your platform from the [releases page](https://github.com/frivas/go-git-swap/releases).
+Download the binary for your platform from the [releases page](https://github.com/frivas/go-git-swap/releases) (published when a `v*` tag is pushed). Each release has `SHA256SUMS`; check with `shasum -a 256 -c SHA256SUMS --ignore-missing`.
 
 ### Building from Source
 
@@ -50,8 +50,8 @@ cd go-git-swap
 # Build for your platform
 make build
 
-# Or build for all supported platforms
-make build-all
+# Or build all release binaries plus SHA256SUMS
+make checksums
 ```
 
 ## Usage 💡
@@ -85,13 +85,17 @@ The application stores its configuration in `~/.go-git-swap.json`. Each profile 
 - Git username
 - Git email
 - Full name
-- SSH signing key path (optional)
+- SSH signing key path (optional; must be the `.pub` file)
+
+Selecting a profile rewrites your **global** git config (`git config --global`). Per-repository or `includeIf` settings still take precedence over it.
+
+`go-git-swap --version` prints the version.
 
 ## Development 🛠️
 
 ### Prerequisites
 
-- Go 1.20 or higher
+- Go 1.27 or higher
 - Make (for building)
 
 ### Building
@@ -103,8 +107,10 @@ make build
 # Build for all platforms
 make build-all
 
-# Run tests
+# Run tests, linter and vulnerability scan
 make test
+make lint
+make vuln
 
 # Clean build artifacts
 make clean

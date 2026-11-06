@@ -3,73 +3,63 @@ name: Go
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  test:
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        go-version: ['1.20', '1.21', '1.22', '1.23']
+        os: [ubuntu-latest, macos-latest, windows-latest]
       fail-fast: false
-
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
-          fetch-depth: 0
+          go-version-file: go.mod
+      - run: go build ./...
+      - run: go test -race ./...
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ matrix.go-version }}
-
-      - name: Create bin directory
-        run: mkdir -p bin
-
-      - name: Build
-        run: |
-          make clean
-          make build
-
-      - name: Test
-        run: make test
-
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: latest
-
-  release:
-    needs: build
+  lint:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.15
+      - run: make vuln
+
+  # Builds every release binary on each run, so a broken target shows up in
+  # PRs; publishes them only when a v* tag is pushed.
+  release:
+    needs: [test, lint]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
-          go-version: '1.21'
-
-      - name: Create bin directory
-        run: mkdir -p bin
-
-      - name: Build all platforms
-        run: |
-          make clean
-          make build-all
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+          go-version-file: go.mod
+      - run: make checksums
+      - uses: actions/upload-artifact@v7
+        with:
+          name: binaries
+          path: bin/
+      - uses: softprops/action-gh-release@v3
+        if: startsWith(github.ref, 'refs/tags/v')
         with:
           files: |
-            bin/go-git-swap-darwin-amd64
-            bin/go-git-swap-darwin-arm64
-            bin/go-git-swap-linux-amd64
-            bin/go-git-swap-linux-arm64
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            bin/go-git-swap-*
+            bin/SHA256SUMS
+          generate_release_notes: true
