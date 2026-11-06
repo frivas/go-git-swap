@@ -4,7 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"path/filepath"
+	"runtime/debug"
+	"strconv"
 	"strings"
 
 	"github.com/fatih/color"
@@ -21,7 +22,31 @@ var (
 	yellow = color.New(color.FgYellow).SprintFunc()
 )
 
+// Version is set by -ldflags at release time.
+var Version = ""
+
+func version() string {
+	if Version != "" {
+		return Version
+	}
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		return bi.Main.Version
+	}
+	return "dev"
+}
+
 func main() {
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "-v", "--version", "version":
+			fmt.Println("go-git-swap", version())
+			return
+		default:
+			fmt.Fprintln(os.Stderr, "usage: go-git-swap [--version]")
+			os.Exit(2)
+		}
+	}
+
 	cfg, err := config.New()
 	if err != nil {
 		fmt.Printf("%s: %v\n", red("Error initializing"), err)
@@ -30,6 +55,15 @@ func main() {
 
 	gitConfig := git.New()
 	reader := bufio.NewReader(os.Stdin)
+	// readLine exits cleanly on EOF instead of looping forever.
+	readLine := func() string {
+		line, err := reader.ReadString('\n')
+		if err != nil && line == "" {
+			fmt.Println()
+			os.Exit(0)
+		}
+		return strings.TrimSpace(line)
+	}
 
 	for {
 		fmt.Println("\n" + blue("Git Profile Manager"))
@@ -66,8 +100,7 @@ func main() {
 		fmt.Println("4) Exit")
 
 		fmt.Print("\nEnter command (1-4): ")
-		choice, _ := reader.ReadString('\n')
-		choice = strings.TrimSpace(choice)
+		choice := readLine()
 
 		switch choice {
 		case "1":
@@ -76,12 +109,8 @@ func main() {
 				continue
 			}
 			fmt.Print("Enter profile number: ")
-			input, _ := reader.ReadString('\n')
-			input = strings.TrimSpace(input)
-			profileNum := 0
-			fmt.Sscanf(input, "%d", &profileNum)
-
-			if profileNum < 1 || profileNum > len(profiles) {
+			profileNum, err := strconv.Atoi(readLine())
+			if err != nil || profileNum < 1 || profileNum > len(profiles) {
 				fmt.Println(red("Invalid profile number"))
 				continue
 			}
@@ -93,52 +122,54 @@ func main() {
 				continue
 			}
 
-			if err := gitConfig.SetGlobalConfig(profile.Email, profile.Username, profile.FullName, os.ExpandEnv(profile.SigningKey)); err != nil {
+			if err := gitConfig.SetGlobalConfig(profile); err != nil {
 				fmt.Printf("%s: %v\n", red("Error updating Git configuration"), err)
 				continue
 			}
 
-			cfg.SetActiveProfile(profile.Name)
+			if err := cfg.SetActiveProfile(profile.Name); err != nil {
+				fmt.Printf("%s: %v\n", red("Error saving active profile"), err)
+				continue
+			}
 			fmt.Printf("%s: %s\n", green("Successfully activated profile"), profile.Name)
 
 		case "2":
 			var newProfile model.GitProfile
 			fmt.Print("Enter profile name (identifier): ")
-			newProfile.Name, _ = reader.ReadString('\n')
-			newProfile.Name = strings.TrimSpace(newProfile.Name)
+			newProfile.Name = readLine()
+			if err := validator.ValidateProfileName(newProfile.Name); err != nil {
+				fmt.Printf("%s: %v\n", red("Error"), err)
+				continue
+			}
 
 			fmt.Print("Enter Git user name (full name): ")
-			newProfile.FullName, _ = reader.ReadString('\n')
-			newProfile.FullName = strings.TrimSpace(newProfile.FullName)
+			newProfile.FullName = readLine()
+			if err := validator.ValidateFullName(newProfile.FullName); err != nil {
+				fmt.Printf("%s: %v\n", red("Error"), err)
+				continue
+			}
 
 			fmt.Print("Enter Git username: ")
-			newProfile.Username, _ = reader.ReadString('\n')
-			newProfile.Username = strings.TrimSpace(newProfile.Username)
+			newProfile.Username = readLine()
+			if err := validator.ValidateUsername(newProfile.Username); err != nil {
+				fmt.Printf("%s: %v\n", red("Error"), err)
+				continue
+			}
 
 			fmt.Print("Enter email: ")
-			newProfile.Email, _ = reader.ReadString('\n')
-			newProfile.Email = strings.TrimSpace(newProfile.Email)
-
+			newProfile.Email = readLine()
 			if err := validator.ValidateEmail(newProfile.Email); err != nil {
 				fmt.Printf("%s: %v\n", red("Error"), err)
 				continue
 			}
 
 			fmt.Print("Enter SSH public key path (optional, press Enter to skip): ")
-			pubKeyPath, _ := reader.ReadString('\n')
-			pubKeyPath = strings.TrimSpace(pubKeyPath)
-
+			pubKeyPath := readLine()
 			if pubKeyPath != "" {
-				pubKeyPath = os.ExpandEnv(pubKeyPath)
-				if strings.HasPrefix(pubKeyPath, "~/") {
-					homeDir, err := os.UserHomeDir()
-					if err != nil {
-						fmt.Printf("%s: %v\n", red("Error getting home directory"), err)
-						continue
-					}
-					pubKeyPath = filepath.Join(homeDir, pubKeyPath[2:])
+				pubKeyPath, err := git.ExpandPath(pubKeyPath)
+				if err == nil {
+					_, err = git.ReadPublicKey(pubKeyPath)
 				}
-				_, err := os.ReadFile(pubKeyPath)
 				if err != nil {
 					fmt.Printf("%s: %v\n", red("Error reading SSH public key"), err)
 					continue
@@ -159,12 +190,8 @@ func main() {
 				continue
 			}
 			fmt.Print("Enter profile number to delete: ")
-			input, _ := reader.ReadString('\n')
-			input = strings.TrimSpace(input)
-			profileNum := 0
-			fmt.Sscanf(input, "%d", &profileNum)
-
-			if profileNum < 1 || profileNum > len(profiles) {
+			profileNum, err := strconv.Atoi(readLine())
+			if err != nil || profileNum < 1 || profileNum > len(profiles) {
 				fmt.Println(red("Invalid profile number"))
 				continue
 			}
@@ -172,9 +199,7 @@ func main() {
 			profileToDelete := profiles[profileNum-1]
 			if profileToDelete == activeProfile {
 				fmt.Print(yellow("Warning: This is your active profile! Are you sure? (y/N): "))
-				confirm, _ := reader.ReadString('\n')
-				confirm = strings.ToLower(strings.TrimSpace(confirm))
-				if confirm != "y" {
+				if strings.ToLower(readLine()) != "y" {
 					continue
 				}
 			}
