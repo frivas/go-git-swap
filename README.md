@@ -9,7 +9,7 @@ Inspired by the need to manage multiple Git configurations easily. Go Git Swap i
 
 ## 🗺️ Roadmap
 
-### Coming Soon (Q2/3 2025)
+### Planned
 
 - [ ] Modern TUI interface using [Bubble Tea](https://github.com/charmbracelet/bubbletea) or similar
 - [ ] Enhanced SSH signing key support
@@ -25,7 +25,7 @@ Current features:
 - SSH commit signing: sets `gpg.format=ssh`, `user.signingkey` and `commit.gpgsign`, and adds the key to your allowed signers file so `git log --show-signature` verifies. Profiles without a key turn signing off.
 - Automatic configuration of Git global settings
 - Simple CLI interface
-- Cross-platform support (macOS, Linux)
+- Cross-platform: Linux (amd64, arm64), macOS (Apple Silicon), Windows (amd64, arm64)
 - Profiles stored in `~/.go-git-swap.json` with `0600` permissions
 
 ## Installation 🚀
@@ -38,7 +38,7 @@ go install github.com/frivas/go-git-swap/cmd/go-git-swap@latest
 
 ### From Releases
 
-Download the binary for your platform from the [releases page](https://github.com/frivas/go-git-swap/releases) (published when a `v*` tag is pushed).
+Download the binary for your platform from the [releases page](https://github.com/frivas/go-git-swap/releases) (published when a `v*` tag is pushed). Each release has `SHA256SUMS`; check with `shasum -a 256 -c SHA256SUMS --ignore-missing`.
 
 ### Building from Source
 
@@ -50,8 +50,8 @@ cd go-git-swap
 # Build for your platform
 make build
 
-# Or build for all supported platforms
-make build-all
+# Or build all release binaries plus SHA256SUMS
+make checksums
 ```
 
 ## Usage 💡
