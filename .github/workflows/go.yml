@@ -37,10 +37,15 @@ jobs:
           version: v2.15
       - run: make vuln
 
+  security:
+    uses: frivas/.github/.github/workflows/security.yml@v1
+    with:
+      codeql-languages: '["go", "actions"]'
+
   # Builds every release binary on each run, so a broken target shows up in
   # PRs; publishes them only when a v* tag is pushed.
   release:
-    needs: [test, lint]
+    needs: [test, lint, security]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -56,10 +61,15 @@ jobs:
         with:
           name: binaries
           path: bin/
+      - uses: actions/download-artifact@v8
+        with:
+          name: sbom
+          path: bin
       - uses: softprops/action-gh-release@v3
         if: startsWith(github.ref, 'refs/tags/v')
         with:
           files: |
             bin/go-git-swap-*
             bin/SHA256SUMS
+            bin/sbom.cdx.json
           generate_release_notes: true
