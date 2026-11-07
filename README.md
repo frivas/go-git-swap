@@ -26,7 +26,7 @@ You commit to work repos, personal projects and client code from the same laptop
 
 ## Features
 
-|  |  |
+| Feature | What it does |
 | --- | --- |
 | **Profiles** | Name, Git user name, username and email per identity, stored in `~/.go-git-swap.json` (`0600`). |
 | **One-step switch** | Pick a profile number and your global Git config is rewritten for you. |
