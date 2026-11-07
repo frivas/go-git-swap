@@ -42,17 +42,15 @@ jobs:
     with:
       codeql-languages: '["go", "actions"]'
 
-  # Builds every release binary on each run, so a broken target shows up in
-  # PRs; publishes them only when a v* tag is pushed.
-  release:
+  # Builds every release binary on each run, so a broken target shows up in PRs.
+  build:
     needs: [test, lint, security]
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
@@ -61,15 +59,17 @@ jobs:
         with:
           name: binaries
           path: bin/
-      - uses: actions/download-artifact@v8
-        with:
-          name: sbom
-          path: bin
-      - uses: softprops/action-gh-release@v3
-        if: startsWith(github.ref, 'refs/tags/v')
-        with:
-          files: |
-            bin/go-git-swap-*
-            bin/SHA256SUMS
-            bin/sbom.cdx.json
-          generate_release_notes: true
+
+  # On a v* tag: the shared release gates on the security report, writes the notes
+  # and attaches the binaries, SHA256SUMS, the SBOM and every scan report.
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    permissions:
+      contents: write
+    uses: frivas/.github/.github/workflows/release.yml@v1
+    with:
+      tag: ${{ github.ref_name }}
+      codeql-languages: '["go", "actions"]'
+      dist-artifact: binaries
+      gate: Tests with the race detector on Linux, macOS and Windows, golangci-lint and govulncheck passed on this commit.
