@@ -1,161 +1,151 @@
-# Go Git Swap
+<div align="center">
 
+# go-git-swap
+
+**One machine. Many Git identities. Zero wrong-email commits.**
+
+A small Go CLI that keeps your personal, work and client Git profiles and switches your global name, email and SSH signing key in one step.
+
+[![CI](https://github.com/frivas/go-git-swap/actions/workflows/go.yml/badge.svg)](https://github.com/frivas/go-git-swap/actions/workflows/go.yml)
+[![Release](https://img.shields.io/github/v/release/frivas/go-git-swap?color=ff9e64)](https://github.com/frivas/go-git-swap/releases/latest)
+[![Go](https://img.shields.io/github/go-mod/go-version/frivas/go-git-swap?color=7aa2f7)](go.mod)
 [![Go Report Card](https://goreportcard.com/badge/github.com/frivas/go-git-swap)](https://goreportcard.com/report/github.com/frivas/go-git-swap)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/license-MIT-9ece6a.svg)](LICENSE)
 
-> **Note**: This is my first Go project! I'm actively learning and improving it. Feedback and contributions are very welcome!
+[Website](https://gitswap.probablysmart.com) · [Install](#install) · [Usage](#usage) · [Releases](https://github.com/frivas/go-git-swap/releases)
 
-Inspired by the need to manage multiple Git configurations easily. Go Git Swap is a command-line tool that helps developers manage multiple Git configurations easily. Switch between different Git profiles seamlessly, perfect for developers who work with multiple Git accounts (personal, work, client projects, etc.).
+<br>
 
-## 🗺️ Roadmap
+<a href="https://gitswap.probablysmart.com"><img src="docs/hero.png" alt="go-git-swap switching the active Git profile from work to personal" width="860"></a>
 
-### Planned
+</div>
 
-- [ ] Modern TUI interface using [Bubble Tea](https://github.com/charmbracelet/bubbletea) or similar
-- [ ] Enhanced SSH signing key support
-- [ ] Profile templates and quick switching
-- [ ] Configuration backup
+## Why
 
-## Features ✨
+You commit to work repos, personal projects and client code from the same laptop. Sooner or later a commit goes out with the wrong email, or signed with the wrong key. go-git-swap stores each identity once and applies the whole set (name, email, signing key and signing settings) together, so nothing from the previous profile is left behind.
 
-Current features:
+## Features
 
-- Manage multiple Git profiles
-- Easy switching between profiles
-- SSH commit signing: sets `gpg.format=ssh`, `user.signingkey` and `commit.gpgsign`, and adds the key to your allowed signers file so `git log --show-signature` verifies. Profiles without a key turn signing off.
-- Automatic configuration of Git global settings
-- Simple CLI interface
-- Cross-platform: Linux (amd64, arm64), macOS (Apple Silicon), Windows (amd64, arm64)
-- Profiles stored in `~/.go-git-swap.json` with `0600` permissions
+|  |  |
+| --- | --- |
+| **Profiles** | Name, Git user name, username and email per identity, stored in `~/.go-git-swap.json` (`0600`). |
+| **One-step switch** | Pick a profile number and your global Git config is rewritten for you. |
+| **SSH commit signing** | Attach a `.pub` key and it sets `gpg.format=ssh`, `user.signingkey` and `commit.gpgsign`, and adds you to your allowed signers file so `git log --show-signature` verifies. |
+| **No leaks between profiles** | A profile without a key turns signing off, so you never sign with another identity's key. Covered by a test that switches between every pair of profiles. |
+| **Validation** | Rejects bad profile names, malformed emails and private keys passed as public keys. |
+| **Cross-platform** | Linux (amd64, arm64), macOS (Apple Silicon), Windows (amd64, arm64). |
 
-## Installation 🚀
+## Install
 
-### Using Go
+<img src="docs/install.png" alt="Install commands and the resulting git config" width="720">
+
+**With Go** (1.27+):
 
 ```bash
 go install github.com/frivas/go-git-swap/cmd/go-git-swap@latest
 ```
 
-### From Releases
+**Prebuilt binaries:** download yours from the [latest release](https://github.com/frivas/go-git-swap/releases/latest).
 
-Download the binary for your platform from the [releases page](https://github.com/frivas/go-git-swap/releases) (published when a `v*` tag is pushed). Each release has `SHA256SUMS`; check with `shasum -a 256 -c SHA256SUMS --ignore-missing`.
+| Platform | File |
+| --- | --- |
+| Linux x86-64 | `go-git-swap-linux-amd64` |
+| Linux ARM64 | `go-git-swap-linux-arm64` |
+| macOS Apple Silicon | `go-git-swap-darwin-arm64` |
+| Windows x86-64 | `go-git-swap-windows-amd64.exe` |
+| Windows ARM64 | `go-git-swap-windows-arm64.exe` |
 
-### Building from Source
+Verify the download against `SHA256SUMS` from the same release:
 
 ```bash
-# Clone the repository
-git clone https://github.com/frivas/go-git-swap.git
-cd go-git-swap
-
-# Build for your platform
-make build
-
-# Or build all release binaries plus SHA256SUMS
-make checksums
+shasum -a 256 -c SHA256SUMS --ignore-missing
 ```
 
-## Usage 💡
+On macOS and Linux, make it executable and put it on your `PATH`:
 
-1. Start the application:
+```bash
+chmod +x go-git-swap-* && mv go-git-swap-* /usr/local/bin/go-git-swap
+```
+
+## Usage
 
 ```bash
 go-git-swap
 ```
 
-2. Create a new profile:
+```text
+Git Profile Manager
+-------------------
+Active Profile: work
 
-   - Select option 2
-   - Enter profile details (name, email, username, etc.)
-   - Optionally add an SSH signing key
+Available Profiles:
+  1) personal
+* 2) work
 
-3. Switch between profiles:
+Commands:
+1) Select profile
+2) Create new profile
+3) Delete profile
+4) Exit
+```
 
-   - Select option 1
-   - Choose the profile you want to activate
+- **Create** (`2`): enter a profile name, full name, username and email, and optionally the path to an SSH public key such as `~/.ssh/id_ed25519.pub`.
+- **Switch** (`1`): pick a profile number. The change applies to every repository that has no identity of its own.
+- **Delete** (`3`): remove a profile. It asks for confirmation if it's the active one.
 
-4. Delete a profile:
-   - Select option 3
-   - Choose the profile you want to remove
+`go-git-swap --version` prints the installed version.
 
-## Configuration 🔧
+### What a switch changes
 
-The application stores its configuration in `~/.go-git-swap.json`. Each profile contains:
+| Git setting | Profile with a signing key | Profile without a key |
+| --- | --- | --- |
+| `user.name`, `user.email` | set | set |
+| `user.signingkey` | path to your `.pub` | removed |
+| `commit.gpgsign` | `true` | removed |
+| `gpg.format` | `ssh` | unchanged |
+| `gpg.ssh.allowedSignersFile` | kept if already set, otherwise `~/.ssh/allowed_signers` | unchanged |
 
-- Profile name (identifier)
-- Git username
-- Git email
-- Full name
-- SSH signing key path (optional; must be the `.pub` file)
+Your allowed signers file is only ever appended to; existing entries are kept.
 
-Selecting a profile rewrites your **global** git config (`git config --global`). Per-repository or `includeIf` settings still take precedence over it.
+> [!NOTE]
+> go-git-swap writes your **global** config. Settings in a repository's own `.git/config`, or from an `includeIf` block, take precedence over it. If you always keep work and personal code in separate folders, `includeIf "gitdir:~/work/"` may be all you need.
 
-`go-git-swap --version` prints the version.
-
-## Development 🛠️
-
-### Prerequisites
-
-- Go 1.27 or higher
-- Make (for building)
-
-### Building
+## Development
 
 ```bash
-# Build for current platform
-make build
+git clone https://github.com/frivas/go-git-swap.git
+cd go-git-swap
 
-# Build for all platforms
-make build-all
-
-# Run tests, linter and vulnerability scan
-make test
-make lint
-make vuln
-
-# Clean build artifacts
-make clean
+make build       # bin/go-git-swap
+make test        # go test -race ./...
+make lint        # golangci-lint
+make vuln        # govulncheck
+make checksums   # all release binaries + SHA256SUMS
 ```
 
-### Project Structure
+Tests never touch your real Git config: each one runs `git` and `ssh-keygen` against a temporary home directory.
 
-```
-.
-├── cmd/
-│   └── go-git-swap/       # Main application
-├── internal/
-│   ├── config/           # Configuration management
-│   ├── git/             # Git operations
-│   ├── model/           # Data models
-│   └── validator/       # Input validation
-├── Makefile
-└── README.md
+```text
+cmd/go-git-swap/     CLI entry point and menu
+internal/config/     profile store (~/.go-git-swap.json)
+internal/git/        git config, signing keys, allowed signers
+internal/model/      data types
+internal/validator/  input validation
 ```
 
-## Contributing 🤝
+Releases are automatic: CI tests on Linux, macOS and Windows, and pushing a `v*` tag publishes the binaries.
 
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+## Roadmap
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+- [ ] Non-interactive `go-git-swap use <profile>`
+- [ ] Modern TUI with [Bubble Tea](https://github.com/charmbracelet/bubbletea)
+- [ ] Profile templates
+- [ ] Configuration backup
 
-### Code Style
+## Contributing
 
-Please follow these guidelines:
+Issues and pull requests are welcome. For bigger changes, please [open an issue](https://github.com/frivas/go-git-swap/issues) first. Run `gofmt`, add tests for new behaviour, and make sure `make test lint` passes.
 
-- Use `gofmt` to format your code
-- Add comments for exported functions
-- Write tests for new functionality
-- Update documentation as needed
+## License
 
-## License 📝
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support 💪
-
-If you find this project useful, please consider giving it a ⭐️ on GitHub or forking it to make it better! Thanks!
-
-For bugs, feature requests, or questions, please [open an issue](https://github.com/frivas/go-git-swap/issues).
+[MIT](LICENSE) © Francisco Rivas
