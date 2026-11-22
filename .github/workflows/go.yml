@@ -7,6 +7,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 permissions:
   contents: read
 
@@ -38,7 +42,7 @@ jobs:
       - run: make vuln
 
   security:
-    uses: frivas/.github/.github/workflows/security.yml@v1
+    uses: frivas/.github/.github/workflows/security.yml@v2
     with:
       codeql-languages: '["go", "actions"]'
 
@@ -67,7 +71,7 @@ jobs:
     needs: build
     permissions:
       contents: write
-    uses: frivas/.github/.github/workflows/release.yml@v1
+    uses: frivas/.github/.github/workflows/release.yml@v2
     with:
       tag: ${{ github.ref_name }}
       codeql-languages: '["go", "actions"]'
