@@ -146,6 +146,12 @@ Releases are automatic: CI tests on Linux, macOS and Windows, and pushing a `v*`
 
 Issues and pull requests are welcome. For bigger changes, please [open an issue](https://github.com/frivas/go-git-swap/issues) first. Run `gofmt`, add tests for new behaviour, and make sure `make test lint` passes.
 
+## Author
+
+**Francisco Rivas** · [Portfolio](https://portfolio.probablysmart.com) · [LinkedIn](https://www.linkedin.com/in/franciscojrivash/) · [GitHub](https://github.com/frivas)
+
+<a href="https://chapa.thecreativetoken.com/u/frivas"><img src="https://chapa.thecreativetoken.com/u/frivas/badge.svg" alt="Chapa developer impact badge for Francisco Rivas" width="420"></a>
+
 ## License
 
 [MIT](LICENSE) © Francisco Rivas
